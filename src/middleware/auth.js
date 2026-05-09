@@ -185,8 +185,8 @@ const requireVerification = (req, res, next) => {
 
 // Rate limiting for authentication endpoints
 const authRateLimit = {
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 5000, // limit each IP to 5000 requests per windowMs
   message: {
     success: false,
     message: 'Too many authentication attempts. Please try again later.'
