@@ -131,6 +131,9 @@ userSchema.methods.getPublicProfile = function() {
 };
 
 userSchema.methods.addRefreshToken = function(token) {
+  if (!this.refreshTokens) {
+    this.refreshTokens = [];
+  }
   this.refreshTokens.push(token);
   // Keep only last 5 refresh tokens
   if (this.refreshTokens.length > 5) {
@@ -139,6 +142,10 @@ userSchema.methods.addRefreshToken = function(token) {
 };
 
 userSchema.methods.removeRefreshToken = function(token) {
+  if (!this.refreshTokens) {
+    this.refreshTokens = [];
+    return;
+  }
   this.refreshTokens = this.refreshTokens.filter(rt => rt !== token);
 };
 

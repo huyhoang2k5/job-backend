@@ -153,7 +153,7 @@ const login = async (req, res) => {
     const { email, password } = req.body;
 
     // Find user with password
-    const user = await User.findByEmail(email).select('+password');
+    const user = await User.findByEmail(email).select('+password +refreshTokens');
     if (!user) {
       return res.status(401).json({
         success: false,
