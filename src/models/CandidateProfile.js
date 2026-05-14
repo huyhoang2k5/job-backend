@@ -10,25 +10,25 @@ const candidateProfileSchema = new mongoose.Schema({
   skills: [{
     type: String,
     trim: true,
-    maxlength: [50, 'Skill name cannot exceed 50 characters']
+    maxlength: [100, 'Skill name cannot exceed 100 characters']
   }],
   experience: [{
     title: {
       type: String,
       required: true,
       trim: true,
-      maxlength: [100, 'Job title cannot exceed 100 characters']
+      maxlength: [150, 'Job title cannot exceed 150 characters']
     },
     company: {
       type: String,
       required: true,
       trim: true,
-      maxlength: [100, 'Company name cannot exceed 100 characters']
+      maxlength: [150, 'Company name cannot exceed 150 characters']
     },
     location: {
       type: String,
       trim: true,
-      maxlength: [100, 'Location cannot exceed 100 characters']
+      maxlength: [150, 'Location cannot exceed 150 characters']
     },
     startDate: {
       type: Date,
@@ -53,13 +53,13 @@ const candidateProfileSchema = new mongoose.Schema({
       type: String,
       required: true,
       trim: true,
-      maxlength: [100, 'Degree cannot exceed 100 characters']
+      maxlength: [150, 'Degree cannot exceed 150 characters']
     },
     school: {
       type: String,
       required: true,
       trim: true,
-      maxlength: [100, 'School name cannot exceed 100 characters']
+      maxlength: [150, 'School name cannot exceed 150 characters']
     },
     field: {
       type: String,

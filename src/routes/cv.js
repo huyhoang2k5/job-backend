@@ -25,7 +25,7 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     const allowedTypes = process.env.ALLOWED_FILE_TYPES?.split(',') || ['pdf', 'docx', 'jpg', 'jpeg', 'png'];
     const fileExtension = file.originalname.split('.').pop().toLowerCase();
-    
+
     if (allowedTypes.includes(fileExtension)) {
       cb(null, true);
     } else {
@@ -43,15 +43,15 @@ router.post('/upload', authenticate, authorize('candidate'), upload.single('cv')
         message: 'No file uploaded'
       });
     }
-    
+
     const userId = req.user._id;
-    
+
     // Get or create candidate profile
     let candidateProfile = await CandidateProfile.findOne({ userId });
     if (!candidateProfile) {
       candidateProfile = new CandidateProfile({ userId });
     }
-    
+
     // Upload file to Cloudinary
     let cvUrl;
     try {
@@ -71,7 +71,7 @@ router.post('/upload', authenticate, authorize('candidate'), upload.single('cv')
           }
         ).end(req.file.buffer);
       });
-      
+
       cvUrl = result.secure_url;
     } catch (uploadError) {
       logger.error('Cloudinary upload error:', uploadError);
@@ -81,12 +81,12 @@ router.post('/upload', authenticate, authorize('candidate'), upload.single('cv')
         error: uploadError.message
       });
     }
-    
+
     // Extract CV data using AI service
     let cvParsedData = {};
     try {
       const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
-      
+
       // Create form data for AI service
       const FormData = require('form-data');
       const formData = new FormData();
@@ -95,7 +95,7 @@ router.post('/upload', authenticate, authorize('candidate'), upload.single('cv')
         contentType: req.file.mimetype
       });
       formData.append('include_raw_text', 'true');
-      
+
       const aiResponse = await axios.post(`${aiServiceUrl}/api/v1/extract`, formData, {
         headers: {
           ...formData.getHeaders(),
@@ -103,7 +103,7 @@ router.post('/upload', authenticate, authorize('candidate'), upload.single('cv')
         },
         timeout: 30000 // 30 seconds
       });
-      
+
       if (aiResponse.data.success) {
         cvParsedData = aiResponse.data.cv_data || {};
         logger.info(`CV data extracted for user ${userId}`);
@@ -114,12 +114,12 @@ router.post('/upload', authenticate, authorize('candidate'), upload.single('cv')
       logger.error('AI service error:', aiError);
       // Don't fail the upload if AI service fails
     }
-    
+
     // Update candidate profile
     candidateProfile.cvUrl = cvUrl;
     candidateProfile.updateCVData(cvParsedData);
     await candidateProfile.save();
-    
+
     res.json({
       success: true,
       message: 'CV uploaded and processed successfully',
@@ -143,16 +143,16 @@ router.post('/upload', authenticate, authorize('candidate'), upload.single('cv')
 router.get('/me', authenticate, authorize('candidate'), async (req, res) => {
   try {
     const userId = req.user._id;
-    
+
     const candidateProfile = await CandidateProfile.findOne({ userId });
-    
+
     if (!candidateProfile) {
       return res.status(404).json({
         success: false,
         message: 'CV not found'
       });
     }
-    
+
     res.json({
       success: true,
       data: {
@@ -175,19 +175,19 @@ router.put('/me', authenticate, authorize('candidate'), async (req, res) => {
   try {
     const userId = req.user._id;
     const cvData = req.body;
-    
+
     const candidateProfile = await CandidateProfile.findOne({ userId });
-    
+
     if (!candidateProfile) {
       return res.status(404).json({
         success: false,
         message: 'Candidate profile not found'
       });
     }
-    
+
     candidateProfile.updateCVData(cvData);
     await candidateProfile.save();
-    
+
     res.json({
       success: true,
       message: 'CV data updated successfully',
@@ -209,26 +209,60 @@ router.put('/me', authenticate, authorize('candidate'), async (req, res) => {
 router.post('/reprocess', authenticate, authorize('candidate'), async (req, res) => {
   try {
     const userId = req.user._id;
-    
+
     const candidateProfile = await CandidateProfile.findOne({ userId });
-    
+
     if (!candidateProfile || !candidateProfile.cvUrl) {
       return res.status(404).json({
         success: false,
         message: 'No CV found to reprocess'
       });
     }
-    
+
     // Extract CV data using AI service from existing CV URL
     let cvParsedData = {};
     try {
       const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
       
-      // Download CV from Cloudinary
-      const cvResponse = await axios.get(candidateProfile.cvUrl, {
+      let downloadUrl = candidateProfile.cvUrl;
+      
+      // If using private Cloudinary, we might face 401. 
+      // Workaround: Use Cloudinary SDK to get a temporary public version or use Admin API to download
+      if (downloadUrl.includes('cloudinary.com')) {
+        try {
+          logger.info('Using Cloudinary SDK workaround for restricted CV access...');
+          const urlParts = downloadUrl.split('/');
+          const uploadIndex = urlParts.indexOf('upload');
+          if (uploadIndex !== -1) {
+            const publicIdWithExt = urlParts.slice(uploadIndex + 2).join('/');
+            const publicId = publicIdWithExt.split('.')[0];
+            
+            // Re-upload to a temporary public resource to get content
+            // Cloudinary's uploader can access its own restricted resources
+            const uploadResult = await cloudinary.uploader.upload(downloadUrl, {
+              folder: 'temp_reprocess',
+              resource_type: 'auto'
+            });
+            downloadUrl = uploadResult.secure_url;
+            logger.info(`Temporary public URL generated: ${downloadUrl}`);
+            
+            // Ensure we clean up later
+            setTimeout(() => {
+              cloudinary.uploader.destroy(uploadResult.public_id).catch(e => logger.warn('Failed to cleanup temp CV', e));
+            }, 60000); // Delete after 1 minute
+          }
+        } catch (workaroundError) {
+          logger.warn('Cloudinary workaround failed, falling back to direct download', workaroundError);
+        }
+      }
+      
+      logger.info(`Attempting to download CV from: ${downloadUrl}`);
+      // Download CV
+      const cvResponse = await axios.get(downloadUrl, {
         responseType: 'arraybuffer'
       });
-      
+      logger.info(`CV downloaded successfully, size: ${cvResponse.data.length}`);
+
       // Create form data for AI service
       const FormData = require('form-data');
       const formData = new FormData();
@@ -237,7 +271,8 @@ router.post('/reprocess', authenticate, authorize('candidate'), async (req, res)
         contentType: 'application/pdf'
       });
       formData.append('include_raw_text', 'true');
-      
+
+      logger.info(`Calling AI service at: ${aiServiceUrl}/api/v1/extract`);
       const aiResponse = await axios.post(`${aiServiceUrl}/api/v1/extract`, formData, {
         headers: {
           ...formData.getHeaders(),
@@ -245,7 +280,7 @@ router.post('/reprocess', authenticate, authorize('candidate'), async (req, res)
         },
         timeout: 30000 // 30 seconds
       });
-      
+
       if (aiResponse.data.success) {
         cvParsedData = aiResponse.data.cv_data || {};
         logger.info(`CV data re-extracted for user ${userId}`);
@@ -253,18 +288,23 @@ router.post('/reprocess', authenticate, authorize('candidate'), async (req, res)
         logger.warn(`AI service re-extraction failed: ${aiResponse.data.error}`);
       }
     } catch (aiError) {
-      logger.error('AI service re-processing error:', aiError);
+      logger.error('AI service re-processing error details:', {
+        message: aiError.message,
+        status: aiError.response?.status,
+        data: aiError.response?.data,
+        url: aiError.config?.url
+      });
       return res.status(500).json({
         success: false,
         message: 'Failed to re-process CV with AI service',
         error: aiError.message
       });
     }
-    
+
     // Update candidate profile
     candidateProfile.updateCVData(cvParsedData);
     await candidateProfile.save();
-    
+
     res.json({
       success: true,
       message: 'CV re-processed successfully',
@@ -286,16 +326,16 @@ router.post('/reprocess', authenticate, authorize('candidate'), async (req, res)
 router.delete('/me', authenticate, authorize('candidate'), async (req, res) => {
   try {
     const userId = req.user._id;
-    
+
     const candidateProfile = await CandidateProfile.findOne({ userId });
-    
+
     if (!candidateProfile) {
       return res.status(404).json({
         success: false,
         message: 'CV not found'
       });
     }
-    
+
     // Delete from Cloudinary
     if (candidateProfile.cvUrl) {
       try {
@@ -307,12 +347,12 @@ router.delete('/me', authenticate, authorize('candidate'), async (req, res) => {
         // Don't fail the operation if Cloudinary deletion fails
       }
     }
-    
+
     // Update profile
     candidateProfile.cvUrl = null;
     candidateProfile.cvParsed = {};
     await candidateProfile.save();
-    
+
     res.json({
       success: true,
       message: 'CV deleted successfully'
@@ -331,12 +371,12 @@ router.delete('/me', authenticate, authorize('candidate'), async (req, res) => {
 router.get('/ai-status', authenticate, authorize('candidate'), async (req, res) => {
   try {
     const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
-    
+
     try {
       const response = await axios.get(`${aiServiceUrl}/health`, {
         timeout: 5000 // 5 seconds
       });
-      
+
       res.json({
         success: true,
         data: {
