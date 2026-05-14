@@ -236,3 +236,9 @@ npm run test:watch
 
 ### 2. Lỗi tải lên ảnh/tài liệu bị từ chối (`Cloudinary upload failed`)
 - **Khắc phục**: Hãy kiểm tra kỹ 3 thông số bảo mật Cloudinary trong `.env` (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, và `CLOUDINARY_API_SECRET`). Đảm bảo thông tin sao chép từ tài khoản Cloudinary của bạn là chính xác và không chứa dấu cách thừa.
+
+
+Vai trò (Role)	Email	Mật khẩu (Password)
+Ứng viên (Candidate)	candidate_1655@test.com	Password123
+Nhà tuyển dụng (Employer)	employer_1655@test.com	Password123
+Quản trị viên (Admin)	admin_1655@test.com	Password123
