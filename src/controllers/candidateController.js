@@ -544,7 +544,7 @@ const getRecommendations = async (req, res) => {
           if (job) {
             recommendedJobs.push({
               ...job.toObject(),
-              matchScore: rec.match_score,
+              matchScore: Math.round(rec.match_score * 100),
               matchReasons: rec.match_reasons
             });
           }
