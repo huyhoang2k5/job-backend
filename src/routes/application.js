@@ -27,7 +27,22 @@ router.get('/:id', authenticate, async (req, res) => {
         _id: id,
         candidateId: candidateProfile._id
       })
-        .populate('jobId', 'title companyName location salary type')
+        .populate({
+          path: 'jobId',
+          select: 'title location salary type employerId',
+          populate: {
+            path: 'employerId',
+            select: 'companyName userId logo'
+          }
+        })
+        .populate({
+          path: 'job',
+          select: 'title location salary type employerId',
+          populate: {
+            path: 'employerId',
+            select: 'companyName userId logo'
+          }
+        })
         .populate('candidateId', 'name email skills experience');
     } else if (req.user.role === 'employer') {
       // Employers can only see applications for their jobs
@@ -45,12 +60,25 @@ router.get('/:id', authenticate, async (req, res) => {
         .populate({
           path: 'jobId',
           match: { employerId: employerProfile._id },
-          select: 'title companyName location salary type'
+          select: 'title location salary type employerId',
+          populate: {
+            path: 'employerId',
+            select: 'companyName userId logo'
+          }
+        })
+        .populate({
+          path: 'job',
+          match: { employerId: employerProfile._id },
+          select: 'title location salary type employerId',
+          populate: {
+            path: 'employerId',
+            select: 'companyName userId logo'
+          }
         })
         .populate('candidateId', 'name email skills experience');
       
       // Check if application belongs to employer's job
-      if (!application.jobId) {
+      if (!application || !application.jobId) {
         return res.status(404).json({
           success: false,
           message: 'Application not found'
@@ -59,7 +87,22 @@ router.get('/:id', authenticate, async (req, res) => {
     } else {
       // Admins can see any application
       application = await Application.findById(id)
-        .populate('jobId', 'title companyName location salary type')
+        .populate({
+          path: 'jobId',
+          select: 'title location salary type employerId',
+          populate: {
+            path: 'employerId',
+            select: 'companyName userId logo'
+          }
+        })
+        .populate({
+          path: 'job',
+          select: 'title location salary type employerId',
+          populate: {
+            path: 'employerId',
+            select: 'companyName userId logo'
+          }
+        })
         .populate('candidateId', 'name email skills experience')
         .populate('userId', 'name email');
     }

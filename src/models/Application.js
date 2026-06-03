@@ -230,13 +230,35 @@ applicationSchema.methods.removeAttachment = function(attachmentId) {
 // Static methods
 applicationSchema.statics.findByCandidate = function(candidateId) {
   return this.find({ candidateId })
-    .populate('job', 'title company location salary')
+    .populate({
+      path: 'job',
+      select: 'title location salary type employerId',
+      populate: {
+        path: 'employerId',
+        select: 'companyName userId logo'
+      }
+    })
+    .populate({
+      path: 'jobId',
+      select: 'title location salary type employerId',
+      populate: {
+        path: 'employerId',
+        select: 'companyName userId logo'
+      }
+    })
     .sort({ appliedAt: -1 });
 };
 
 applicationSchema.statics.findByJob = function(jobId) {
   return this.find({ jobId })
-    .populate('candidate', 'name email skills experience')
+    .populate({
+      path: 'candidate',
+      select: 'skills experience userId',
+      populate: {
+        path: 'userId',
+        select: 'name email'
+      }
+    })
     .sort({ matchScore: -1, appliedAt: -1 });
 };
 
@@ -247,7 +269,14 @@ applicationSchema.statics.findByEmployer = function(employerId) {
       match: { employerId },
       select: 'title location salary type'
     })
-    .populate('candidate', 'name email skills experience')
+    .populate({
+      path: 'candidate',
+      select: 'skills experience userId',
+      populate: {
+        path: 'userId',
+        select: 'name email'
+      }
+    })
     .sort({ appliedAt: -1 });
 };
 

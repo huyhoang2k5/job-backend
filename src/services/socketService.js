@@ -140,15 +140,21 @@ const socketHandler = (io) => {
           return;
         }
         
-        // Verify user is in room
-        const userInfo = connectedUsers.get(user._id.toString());
-        if (!userInfo || !userInfo.joinedRooms.has(roomId)) {
-          socket.emit('error', { message: 'You are not in this room' });
+        // Verify user is part of the room (userId must be in the roomId)
+        const roomUsers = roomId.split('_');
+        if (!roomUsers.includes(user._id.toString())) {
+          socket.emit('error', { message: 'You are not part of this conversation' });
           return;
         }
         
+        // Auto-join the room if not already joined
+        const userInfo = connectedUsers.get(user._id.toString());
+        if (userInfo && !userInfo.joinedRooms.has(roomId)) {
+          socket.join(roomId);
+          userInfo.joinedRooms.add(roomId);
+        }
+        
         // Get other user ID from room
-        const roomUsers = roomId.split('_');
         const receiverId = roomUsers.find(id => id !== user._id.toString());
         
         if (!receiverId) {

@@ -178,6 +178,11 @@ jobPostSchema.virtual('isLive').get(function() {
          !this.isExpired;
 });
 
+// Virtual for employer (alias to populated employerId)
+jobPostSchema.virtual('employer').get(function() {
+  return this.employerId;
+});
+
 // Pre-save middleware
 jobPostSchema.pre('save', function(next) {
   // Set approved date when status changes to approved

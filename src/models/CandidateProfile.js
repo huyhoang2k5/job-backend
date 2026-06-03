@@ -193,6 +193,16 @@ candidateProfileSchema.virtual('totalExperience').get(function() {
   return `${remainingMonths} months`;
 });
 
+// Virtual for candidate name (alias to populated userId name)
+candidateProfileSchema.virtual('name').get(function() {
+  return this.userId?.name;
+});
+
+// Virtual for candidate email (alias to populated userId email)
+candidateProfileSchema.virtual('email').get(function() {
+  return this.userId?.email;
+});
+
 // Virtual for latest education
 candidateProfileSchema.virtual('latestEducation').get(function() {
   if (!this.education || this.education.length === 0) return null;

@@ -468,7 +468,14 @@ const getApplications = async (req, res) => {
     
     const applications = await Application.find(query)
       .populate('candidateId', 'name email skills')
-      .populate('jobId', 'title companyName')
+      .populate({
+        path: 'jobId',
+        select: 'title employerId',
+        populate: {
+          path: 'employerId',
+          select: 'companyName'
+        }
+      })
       .populate('userId', 'name email')
       .sort({ appliedAt: -1 })
       .skip(skip)
