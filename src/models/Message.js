@@ -301,6 +301,7 @@ messageSchema.statics.getRecentConversations = function(userId, limit = 20) {
     },
     {
       $project: {
+        id: '$_id',
         roomId: '$_id',
         lastMessage: 1,
         unreadCount: 1,

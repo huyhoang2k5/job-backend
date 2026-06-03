@@ -8,6 +8,7 @@ const {
   deleteJob,
   getMyJobs,
   getJobApplications,
+  getEmployerApplications,
   updateApplicationStatus,
   searchCandidates,
   getDashboardStats,
@@ -31,6 +32,7 @@ router.get('/jobs', getMyJobs);
 router.put('/jobs/:id', jobValidation, updateJob);
 router.delete('/jobs/:id', deleteJob);
 router.get('/jobs/:id/applications', getJobApplications);
+router.get('/applications', getEmployerApplications);
 router.patch('/applications/:id/status', updateApplicationStatus);
 
 // Candidate search

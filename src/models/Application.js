@@ -262,12 +262,25 @@ applicationSchema.statics.findByJob = function(jobId) {
     .sort({ matchScore: -1, appliedAt: -1 });
 };
 
-applicationSchema.statics.findByEmployer = function(employerId) {
-  return this.find({})
+applicationSchema.statics.findByEmployer = async function(employerId) {
+  const jobs = await mongoose.model('JobPost').find({ employerId }).select('_id');
+  const jobIds = jobs.map(j => j._id);
+  return this.find({ jobId: { $in: jobIds } })
     .populate({
       path: 'job',
-      match: { employerId },
-      select: 'title location salary type'
+      select: 'title location salary type employerId',
+      populate: {
+        path: 'employerId',
+        select: 'companyName userId logo'
+      }
+    })
+    .populate({
+      path: 'jobId',
+      select: 'title location salary type employerId',
+      populate: {
+        path: 'employerId',
+        select: 'companyName userId logo'
+      }
     })
     .populate({
       path: 'candidate',

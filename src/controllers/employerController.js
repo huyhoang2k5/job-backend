@@ -667,6 +667,35 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
+// Get all applications for employer's jobs
+const getEmployerApplications = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const employerProfile = await EmployerProfile.findOne({ userId });
+    
+    if (!employerProfile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employer profile not found'
+      });
+    }
+    
+    const applications = await Application.findByEmployer(employerProfile._id);
+    
+    res.json({
+      success: true,
+      data: { applications }
+    });
+  } catch (error) {
+    logger.error('Get employer applications error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get applications',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -675,6 +704,7 @@ module.exports = {
   deleteJob,
   getMyJobs,
   getJobApplications,
+  getEmployerApplications,
   updateApplicationStatus,
   searchCandidates,
   getDashboardStats,
