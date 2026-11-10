@@ -623,8 +623,8 @@ const getDashboardStats = async (req, res) => {
     ]);
     
     // Get recent applications
-    const recentApplications = await Application.findByEmployer(employerProfile._id)
-      .limit(5);
+    const recentApplications = (await Application.findByEmployer(employerProfile._id))
+      .slice(0, 5);
     
     // Get active jobs
     const activeJobs = await JobPost.find({

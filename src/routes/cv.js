@@ -5,6 +5,8 @@ const { authenticate, authorize, requireVerification } = require('../middleware/
 const CandidateProfile = require('../models/CandidateProfile');
 const axios = require('axios');
 const logger = require('../utils/logger');
+const fs = require('fs');
+const path = require('path');
 
 const router = express.Router();
 
@@ -34,6 +36,20 @@ const upload = multer({
   }
 });
 
+const getLocalCvUrl = (req, filename) => `${req.protocol}://${req.get('host')}/uploads/cvs/${filename}`;
+
+const saveCvLocally = async (req, file, userId) => {
+  const uploadDir = path.join(__dirname, '../../uploads/cvs');
+  await fs.promises.mkdir(uploadDir, { recursive: true });
+
+  const extension = path.extname(file.originalname).toLowerCase();
+  const filename = `cv_${userId}_${Date.now()}${extension}`;
+  const filePath = path.join(uploadDir, filename);
+
+  await fs.promises.writeFile(filePath, file.buffer);
+  return getLocalCvUrl(req, filename);
+};
+
 // Upload CV and extract data using AI service
 router.post('/upload', authenticate, authorize('candidate'), upload.single('cv'), async (req, res) => {
   try {
@@ -52,32 +68,15 @@ router.post('/upload', authenticate, authorize('candidate'), upload.single('cv')
       candidateProfile = new CandidateProfile({ userId });
     }
 
-    // Upload file to Cloudinary
+    // Store the original CV locally so it can always be opened and reprocessed in local development.
     let cvUrl;
     try {
-      const result = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          {
-            resource_type: 'auto',
-            folder: 'cvs',
-            public_id: `cv_${userId}_${Date.now()}`
-          },
-          (error, result) => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve(result);
-            }
-          }
-        ).end(req.file.buffer);
-      });
-
-      cvUrl = result.secure_url;
+      cvUrl = await saveCvLocally(req, req.file, userId);
     } catch (uploadError) {
-      logger.error('Cloudinary upload error:', uploadError);
+      logger.error('Local CV save error:', uploadError);
       return res.status(500).json({
         success: false,
-        message: 'Failed to upload CV to cloud storage',
+        message: 'Failed to save CV file',
         error: uploadError.message
       });
     }

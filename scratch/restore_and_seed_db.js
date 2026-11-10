@@ -48,6 +48,7 @@ async function restoreAndSeedDB() {
         name: 'Đặng Quốc Huy',
         email: 'dangquochuy@gmail.com',
         password: 'Password123',
+        cvUrl: 'http://localhost:3001/uploads/cvs/dangquochuy.html',
         skills: ['React', 'Next.js', 'Node.js', 'MongoDB', 'TypeScript', 'Tailwind CSS'],
         location: 'Đà Nẵng',
         bio: 'Lập trình viên Web năng động với đam mê xây dựng giao diện người dùng đẹp mắt, tối ưu hóa hiệu năng và kết nối vi dịch vụ.',
@@ -77,6 +78,7 @@ async function restoreAndSeedDB() {
         name: 'Đoàn Nguyễn Bảo',
         email: 'doannguyenbao@gmail.com',
         password: 'Password123',
+        cvUrl: 'http://localhost:3001/uploads/cvs/doannguyenbao.html',
         skills: ['Node.js', 'Python', 'Go', 'Docker', 'Kubernetes', 'PostgreSQL', 'Redis', 'AWS'],
         location: 'TP. Hồ Chí Minh',
         bio: 'Kỹ sư Backend giàu kinh nghiệm về phát triển hệ thống phân tán, xử lý tải cao, tối ưu hóa cơ sở dữ liệu lớn.',
@@ -106,6 +108,7 @@ async function restoreAndSeedDB() {
         name: 'Lê Nguyễn Huy Hoàng',
         email: 'lenguyenhuyhoang@gmail.com',
         password: 'Password123',
+        cvUrl: 'http://localhost:3001/uploads/cvs/lenguyenhuyhoang.html',
         skills: ['Python', 'TensorFlow', 'PyTorch', 'React', 'Node.js', 'SQL', 'Data Science', 'Machine Learning'],
         location: 'Đà Nẵng',
         bio: 'Sinh viên năm cuối ngành Khoa học dữ liệu VKU, đam mê nghiên cứu ứng dụng Trí tuệ nhân tạo (AI) vào cuộc sống.',
@@ -152,7 +155,7 @@ async function restoreAndSeedDB() {
         resumeHeadline: cData.resumeHeadline,
         education: cData.education,
         experience: cData.experience,
-        cvUrl: 'https://res.cloudinary.com/dqaku0n0q/image/upload/v1717200000/sample_cv.pdf',
+        cvUrl: cData.cvUrl,
         expectedSalary: { min: 10000000, max: 30000000, currency: 'VND' }
       });
       await profile.save();
@@ -234,7 +237,7 @@ async function restoreAndSeedDB() {
         foundedYear: eData.foundedYear,
         benefits: eData.benefits,
         isApproved: true,
-        logo: `https://logo.clearbit.com/${eData.companyName.toLowerCase().replace(/\s/g, '')}.com`
+        logo: null
       });
       await profile.save();
       employers[eData.companyName] = profile;
